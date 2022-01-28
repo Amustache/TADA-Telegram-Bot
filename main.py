@@ -318,8 +318,8 @@ def main() -> None:
 
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(CommandHandler(["notify", "notify_all"], notify_all))
-    dispatcher.add_handler(MessageHandler(Filters.chat_type.private, forward_to_chat))
-    dispatcher.add_handler(MessageHandler(Filters.chat(ADMINS_GROUPCHAT) & Filters.reply, forward_to_user))
+    dispatcher.add_handler(MessageHandler(Filters.chat_type.private & ~Filters.command, forward_to_chat))
+    dispatcher.add_handler(MessageHandler(Filters.chat(ADMINS_GROUPCHAT) & Filters.reply & ~Filters.command, forward_to_user))
 
     updater.start_polling()
 
