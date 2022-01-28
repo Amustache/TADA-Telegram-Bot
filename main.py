@@ -12,8 +12,7 @@ from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, 
 
 # Enable logging
 from helpers import add_new_item, get_and_update_next_id, get_spreadsheets_creds
-from secret import ADMINS_GROUPCHAT, ADMINS_IDS, DUMP_GROUPCHAT, TOKEN
-
+from secret import ADMINS_GROUPCHAT, ADMINS_IDS, DUMP_GROUPCHAT, TOKEN, BOT_ID
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
@@ -280,36 +279,28 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 def forward_to_chat(update: Update, context: CallbackContext) -> None:
     # Stolen from https://github.com/ohld/telegram-support-bot
-    forwarded = update.message.forward(chat_id=ADMINS_GROUPCHAT)
-    if not forwarded.forward_from:
-        context.bot.send_message(
-            chat_id=ADMINS_GROUPCHAT,
-            reply_to_message_id=forwarded.message_id,
-            text="{}\nUser above don't allow forward his messages. Reply to this message.".format(
-                update.message.from_user.id
-            ),
-        )
+    update.message.forward(chat_id=ADMINS_GROUPCHAT)
 
 
 def forward_to_user(update: Update, context: CallbackContext) -> None:
     # Stolen from https://github.com/ohld/telegram-support-bot
-    user_id = None
-    if update.message.reply_to_message.forward_from:
-        user_id = update.message.reply_to_message.forward_from.id
-    elif "User above don't allow forward his messages. Reply to this message." in update.message.reply_to_message.text:
-        try:
-            user_id = int(update.message.reply_to_message.text.split("\n")[0])
-        except ValueError:
-            user_id = None
-    if user_id:
-        context.bot.copy_message(
-            message_id=update.message.message_id, chat_id=user_id, from_chat_id=update.message.chat_id
-        )
-    else:
-        context.bot.send_message(
-            chat_id=ADMINS_GROUPCHAT,
-            text="User above don't allow forward his messages. You must reply to bot reply under user forwarded message.",
-        )
+    if update.message.reply_to_message.from_user.id == BOT_ID:
+        if update.message.reply_to_message.forward_from:
+            user_id = update.message.reply_to_message.forward_from.id
+        else:
+            try:
+                user_id = int(update.message.reply_to_message.text.split("\n")[0])
+            except ValueError:
+                user_id = None
+        if user_id:
+            context.bot.copy_message(
+                message_id=update.message.message_id, chat_id=user_id, from_chat_id=update.message.chat_id
+            )
+        else:
+            context.bot.send_message(
+                chat_id=ADMINS_GROUPCHAT,
+                text="User above don't allow forward his messages. You must reply to bot reply under user forwarded message.",
+            )
 
 
 def notify_all(update: Update, context: CallbackContext) -> None:
