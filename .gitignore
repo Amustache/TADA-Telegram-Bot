@@ -1,6 +1,7 @@
 secret.py
 users
-submissions_*
+submissions.csv
+*.json
 
 # Created by https://www.toptal.com/developers/gitignore/api/windows,macos,linux,python,venv,pycharm+all
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,macos,linux,python,venv,pycharm+all
