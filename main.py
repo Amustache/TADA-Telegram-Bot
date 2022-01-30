@@ -245,7 +245,7 @@ def submission(update: Update, context: CallbackContext) -> int:
 
     # Send to DUMP
     message = "#{}\n".format(pic_id)
-    message += "- User ID: {}\n".format(user.id)
+    # message += "- User ID: {}\n".format(user.id)
     message += "- Title: {}\n".format(context.user_data[user.id]["title"])
     message += "- Link: {}\n".format(context.user_data[user.id]["link"])
     message += "- NSFW?: {}\n".format(
