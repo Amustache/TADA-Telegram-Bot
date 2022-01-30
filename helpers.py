@@ -1,10 +1,14 @@
 import os
+
+
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.errors import HttpError
 
-from secret import SPREADSHEET_ID, BASE_URL
+
+from secret import BASE_URL, SPREADSHEET_ID
+
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 VALUE_INPUT_OPTION = "RAW"
@@ -52,10 +56,13 @@ def get_and_update_next_id(service):
 
         # Update id
         values = [[next_id + 1]]
-        body = {
-            'values': values
-        }
-        result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=NEXT_ID, valueInputOption=VALUE_INPUT_OPTION, body=body).execute()
+        body = {"values": values}
+        result = (
+            service.spreadsheets()
+            .values()
+            .update(spreadsheetId=SPREADSHEET_ID, range=NEXT_ID, valueInputOption=VALUE_INPUT_OPTION, body=body)
+            .execute()
+        )
 
         return next_id
     except HttpError as err:
@@ -76,9 +83,17 @@ def add_new_item(service, pic_id, user_id, pic_dict):
                 pic_dict["author"],
             ]
         ]
-        body = {
-            'values': values
-        }
-        result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=ROW_RANGE.format(pic_id + 1), valueInputOption=VALUE_INPUT_OPTION, body=body).execute()
+        body = {"values": values}
+        result = (
+            service.spreadsheets()
+            .values()
+            .update(
+                spreadsheetId=SPREADSHEET_ID,
+                range=ROW_RANGE.format(pic_id + 1),
+                valueInputOption=VALUE_INPUT_OPTION,
+                body=body,
+            )
+            .execute()
+        )
     except HttpError as err:
         return [err]
