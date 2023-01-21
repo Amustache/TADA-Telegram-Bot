@@ -1,7 +1,7 @@
-black<21.13
-google-api-python-client<2.37
+black<22.13
+google-api-python-client<2.74
 google-auth-httplib2<0.2
-google-auth-oauthlib<0.5
-isort<5.11
-pre-commit<2.18
-python-telegram-bot<13.11
+google-auth-oauthlib<0.9
+isort<5.12
+pre-commit<2.22
+python-telegram-bot<20.1
