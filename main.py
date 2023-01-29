@@ -59,6 +59,13 @@ def start(update: Update, context: CallbackContext) -> int:
 
 
 def accept_rules(update: Update, context: CallbackContext) -> int:
+    db.connect(reuse_if_open=True)
+    current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
+    db.close()
+    if current_contest is None:
+        update.message.reply_text("I'm sorry, however submissions are not currently open for TADA.\n"
+                                  "If you feel this is in error, please send a message to this bot to get in contact with the admins.")
+        return ConversationHandler.END
     update.message.reply_text("*Rules*", parse_mode="MarkdownV2")
     update.message.reply_text(
         "- Submissions will be open from February, 1st to February, 28th.\n"
@@ -108,6 +115,13 @@ def submit_photo(update: Update, context: CallbackContext) -> int:
 
 
 def start_again(update: Update, context: CallbackContext) -> int:
+    db.connect(reuse_if_open=True)
+    current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
+    db.close()
+    if current_contest is None:
+        update.message.reply_text("I'm sorry, however submissions are not currently open for TADA.\n"
+                                  "If you feel this is in error, please send a message to this bot to get in contact with the admins.")
+        return ConversationHandler.END
     update.message.reply_text("Alright, let's start again, then!\n" "Please give use the title of your artwork.\n")
     context.user_data[update.effective_user.id]["nsfw"] = None
     return SUBMIT_TITLE
