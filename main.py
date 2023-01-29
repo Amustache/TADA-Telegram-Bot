@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # pylint: disable=C0116,W0613
-import traceback
 from datetime import datetime
-import csv
 import logging
 import html
 import json
@@ -190,7 +188,7 @@ def enter_author(update: Update, context: CallbackContext) -> int:
     context.user_data[user.id]["at"] = update.message.text
     update.message.reply_text(
         "We are almost done!\n"
-        "Now, we just need to know how we should reference you. You can either put a name, a nickname, or a Telegram @.\n"
+        "Now, we just need to know a good way to contact you. This will only be shared with the admins of this competition.\n"
     )
 
     return ENTER_AUTHOR
@@ -208,7 +206,7 @@ def confirmation(update: Update, context: CallbackContext) -> int:
         "Yes, {}".format(context.user_data[user.id]["nsfw"]) if context.user_data[user.id]["nsfw"] else "No"
     )
     message += "- Telegram: {}\n".format(context.user_data[user.id]["at"])
-    message += "- Author: {}\n".format(context.user_data[user.id]["author"])
+    message += "- Contact info (will not be shared publicly): {}\n".format(context.user_data[user.id]["author"])
 
     with open(context.user_data[user.id]["filename"], "rb") as file:
         update.message.reply_photo(photo=file, caption=message)
@@ -253,16 +251,15 @@ def submission(update: Update, context: CallbackContext) -> int:
         "Yes, {}".format(submission.contentWarnings) if submission.nsfw else "No"
     )
     message += "- Telegram: {}\n".format(submission.at)
-    message += "- Author: {}\n".format(submission.author)
 
     with open(submission.filename, "rb") as file:
         context.bot.send_photo(chat_id=DUMP_GROUPCHAT, photo=file, caption=message)
 
     # We are done here
     update.message.reply_text(
-        "These information, along with your artwork, have been submitted!\n"
-        "Thank you so much for being part of that competition. We will get back to you in March to let you know about the results.\n"
-        "Meanwhile, if you want to discuss with us, you can directly send a message here. You can submit a new artwork as well using /start.\n"
+        "Your information, along with your artwork, have been submitted!\n"
+        "Thank you so much for being part of this competition. We will get back to you in March to let you know the results!\n"
+        "Meanwhile, if you want to discuss with us, you can directly send a message here. You can also submit a new artwork by using /start.\n"
         "Have a great day!\n",
         reply_markup=ReplyKeyboardRemove(),
     )
