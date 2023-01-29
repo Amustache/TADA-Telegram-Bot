@@ -1,22 +1,22 @@
 #!/usr/bin/env python
 # pylint: disable=C0116,W0613
+import traceback
 from datetime import datetime
 import csv
 import logging
+import html
+import json
+import traceback
 
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, ParseMode
+from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, Filters, MessageHandler, Updater, PicklePersistence
+from db.models import db, Submission, User, Contest, SupportMessage
 
-from googleapiclient.discovery import build
-from telegram import ForceReply, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler, Filters, MessageHandler, Updater
+from secret import ADMINS_GROUPCHAT, DUMP_GROUPCHAT, TOKEN
 
 
 # Enable logging
-from helpers import add_new_item, get_and_update_next_id, get_spreadsheets_creds
-from secret import ADMINS_GROUPCHAT, ADMINS_IDS, BOT_ID, DUMP_GROUPCHAT, TOKEN
-
-
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
-
 logger = logging.getLogger(__name__)
 
 public_can_vote = False
@@ -34,39 +34,25 @@ public_can_vote = False
     CONFIRMATION,
 ) = range(10)
 
-userids_file = "./users"
-submissions_file = "./submissions.csv".format()
-fieldnames = [
-    "filename",
-    "title",
-    "link",
-    "nsfw",
-    "at",
-    "author",
-]
-
-# Connect to Google Sheets API
-creds = get_spreadsheets_creds()
-service = build("sheets", "v4", credentials=creds)
-
 
 def start(update: Update, context: CallbackContext) -> int:
-    user = update.effective_user
-    with open(userids_file, "a") as f:
-        f.write("{}\n".format(user.id))
-
+    db.connect(reuse_if_open=True)
+    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
+    db.close()
+    choices = []
     message = "Welcome to the ✨ Telegram Art Display Action ✨ (TADA) submission platform!\n"
-
-    choices = [["Submit"]]
-    message += '👉 You can click on "Submit" to submit your artwork.\n'
-
-    if public_can_vote or user.id in ADMINS_IDS:
-        choices.append(["{}Vote".format("(admin) " if user.id in ADMINS_IDS else "")])
-        message += '👉 You can click on "Vote" to vote for artworks.\n'
-
+    if current_contest:
+        choices.append(["Submit"])
+        message += '👉 You can click on "Submit" to submit your artwork.\n'
+        if current_contest.publicCanVote or user.isAdmin:
+            choices.append(["{}Vote".format("(admin) " if user.isAdmin else "")])
+            message += '👉 You can click on "Vote" to vote for artworks.\n'
+    else:
+        message += 'There is currently not an active contest going on, please stay tuned for updates!\n'
     message += (
         "👉 You can use /cancel to cancel what you are doing at any time, and /start to start over.\n"
-        "Any question? Simply directly send a message to that bot!"
+        "Any questions? Simply directly send a message to this bot!"
     )
 
     update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(choices, one_time_keyboard=True))
@@ -125,7 +111,7 @@ def submit_photo(update: Update, context: CallbackContext) -> int:
 
 def start_again(update: Update, context: CallbackContext) -> int:
     update.message.reply_text("Alright, let's start again, then!\n" "Please give use the title of your artwork.\n")
-
+    context.user_data[update.effective_user.id]["nsfw"] = None
     return SUBMIT_TITLE
 
 
@@ -161,7 +147,7 @@ def tag_nsfw(update: Update, context: CallbackContext) -> int:
         "Is your artwork NSFW (Not Safe For Work)? As a rule of thumb, if you would not show this artwork to your grandma or display it in an elementary school, it is probably NSFW."
         'As a more precise rule, artworks that contains "nudity, intense sexuality, political incorrectness, profanity, slurs, violence or other potentially disturbing subject matter" (https://en.wikipedia.org/wiki/Not_safe_for_work) must be marked as NSFW.\n'
         "So, do you want to mark your artwork as NSFW?\n",
-        reply_markup=ReplyKeyboardMarkup([["My artwork is NSFW", "My artwork is safe"]], one_time_keyboard=True),
+        reply_markup=ReplyKeyboardMarkup([["My artwork is NSFW", "My artwork is safe"]], one_time_keyboard=True, disable_web_page_preview=True),
     )
 
     return NSFW
@@ -223,7 +209,9 @@ def confirmation(update: Update, context: CallbackContext) -> int:
     )
     message += "- Telegram: {}\n".format(context.user_data[user.id]["at"])
     message += "- Author: {}\n".format(context.user_data[user.id]["author"])
-    update.message.reply_text(message)
+
+    with open(context.user_data[user.id]["filename"], "rb") as file:
+        update.message.reply_photo(photo=file, caption=message)
 
     update.message.reply_text(
         "Are these information correct?\n", reply_markup=ReplyKeyboardMarkup([["Yes!", "Nah."]], one_time_keyboard=True)
@@ -233,29 +221,41 @@ def confirmation(update: Update, context: CallbackContext) -> int:
 
 
 def submission(update: Update, context: CallbackContext) -> int:
+    user_data = context.user_data[update.effective_user.id]
+    db.connect(reuse_if_open=True)
+    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
+    if current_contest is None:
+        update.message.reply_text("I'm sorry, however submissions are not currently open for TADA.\n"
+                                  "If you feel this is in error, please send a message to this bot to get in contact with the admins.")
+        db.close()
+        return ConversationHandler.END
+
+    submission = Submission.create(
+        title=user_data["title"],
+        filename=user_data["filename"],
+        link=user_data["link"],
+        nsfw=bool(user_data["nsfw"]),
+        contentWarnings=user_data["nsfw"] if user_data["nsfw"] else "",
+        at=user_data["at"],
+        author=user_data["author"],
+        contest=current_contest,
+        user=user
+    )
+    db.close()
     user = update.effective_user
-    pic_id = get_and_update_next_id(service)
-
-    # Save locally
-    with open(submissions_file, "w", newline="") as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writerow(context.user_data[user.id])
-
-    # Save on Google sheet
-    add_new_item(service, pic_id, user.id, context.user_data[user.id])
 
     # Send to DUMP
-    message = "#{}\n".format(pic_id)
-    # message += "- User ID: {}\n".format(user.id)
-    message += "- Title: {}\n".format(context.user_data[user.id]["title"])
-    message += "- Link: {}\n".format(context.user_data[user.id]["link"])
+    message = "#{}\n".format(submission.get_id())
+    message += "- Title: {}\n".format(submission.title)
+    message += "- Link: {}\n".format(submission.link)
     message += "- NSFW?: {}\n".format(
-        "Yes, {}".format(context.user_data[user.id]["nsfw"]) if context.user_data[user.id]["nsfw"] else "No"
+        "Yes, {}".format(submission.contentWarnings) if submission.nsfw else "No"
     )
-    message += "- Telegram: {}\n".format(context.user_data[user.id]["at"])
-    message += "- Author: {}\n".format(context.user_data[user.id]["author"])
+    message += "- Telegram: {}\n".format(submission.at)
+    message += "- Author: {}\n".format(submission.author)
 
-    with open(context.user_data[user.id]["filename"], "rb") as file:
+    with open(submission.filename, "rb") as file:
         context.bot.send_photo(chat_id=DUMP_GROUPCHAT, photo=file, caption=message)
 
     # We are done here
@@ -280,50 +280,74 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 def forward_to_chat(update: Update, context: CallbackContext) -> None:
     # Stolen from https://github.com/ohld/telegram-support-bot
-    update.message.forward(chat_id=ADMINS_GROUPCHAT)
+    msg = update.message.forward(chat_id=ADMINS_GROUPCHAT)
+    db.connect(reuse_if_open=True)
+    SupportMessage.create(
+        fromUserId=update.message.from_user.id,
+        fromMsgId=update.message.message_id,
+        adminChatMsgId=msg.message_id)
+    db.close()
 
 
 def forward_to_user(update: Update, context: CallbackContext) -> None:
     # Stolen from https://github.com/ohld/telegram-support-bot
-    if update.message.reply_to_message.from_user.id == BOT_ID:
-        if update.message.reply_to_message.forward_from:
-            user_id = update.message.reply_to_message.forward_from.id
-        else:
-            try:
-                user_id = int(update.message.reply_to_message.text.split("\n")[0])
-            except ValueError:
-                user_id = None
-        if user_id:
+    db.connect(reuse_if_open=True)
+    if update.message.reply_to_message.from_user.id == context.bot.id:
+        supportMessage = SupportMessage.get_or_none(adminChatMsgId=update.message.reply_to_message.message_id)
+        if supportMessage:
             context.bot.copy_message(
-                message_id=update.message.message_id, chat_id=user_id, from_chat_id=update.message.chat_id
+                message_id=update.message.message_id, chat_id=supportMessage.fromUserId, from_chat_id=update.message.chat_id
             )
         else:
             context.bot.send_message(
                 chat_id=ADMINS_GROUPCHAT,
-                text="User above don't allow forward his messages. You must reply to bot reply under user forwarded message.",
+                text="I don't know about that support message!",
             )
+    db.close()
 
 
 def notify_all(update: Update, context: CallbackContext) -> None:
-    if update.effective_user.id in ADMINS_IDS:
-        with open(userids_file, "r") as f:
-            userids = [int(userid) for userid in set(f.readlines())]
-            total = len(userids)
-            blocked = 0
-            if update.message.reply_to_message:
-                for userid in userids:
-                    try:
-                        context.bot.send_message(chat_id=userid, text=update.message.reply_to_message.text)
-                    except:
-                        blocked += 1
-                update.message.reply_text(
-                    "Sent to {} people out of {} ({} failed).".format(total - blocked, total, blocked)
-                )
-            else:
-                text_to_send = "🗣 Message from admin 🗣\n{}".format(update.effective_message.text.split(" ", 1)[1])
-                update.message.reply_text("This is a preview:").reply_text(text_to_send).reply_text(
-                    "Reply /notify to the previous message to send it."
-                )
+    db.connect(reuse_if_open=True)
+    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    users = User.select()
+    db.close()
+    if user.isAdmin:
+        userids = [int(user.telegramId) for user in users]
+        total = len(userids)
+        blocked = 0
+        if update.message.reply_to_message:
+            for userid in userids:
+                try:
+                    context.bot.send_message(chat_id=userid, text=update.message.reply_to_message.text)
+                except:
+                    blocked += 1
+            update.message.reply_text(
+                "Sent to {} people out of {} ({} failed).".format(total - blocked, total, blocked)
+            )
+        else:
+            text_to_send = "🗣 Message from admin 🗣\n{}".format(update.effective_message.text.split(" ", 1)[1])
+            update.message.reply_text("This is a preview:").reply_text(text_to_send).reply_text(
+                "Reply /notify to the previous message to send it."
+            )
+
+
+def error_handler(update: object, context) -> None:
+    logger.error(msg="Exception while handling an update:", exc_info=context.error)
+    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+    tb_string = "".join(tb_list)
+
+    update_str = update.to_dict() if isinstance(update, Update) else str(update)
+    message = (
+        f"An exception was raised while handling an update\n"
+        f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}"
+        "</pre>\n\n"
+        f"<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n"
+        f"<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n"
+        f"<pre>{html.escape(tb_string)}</pre>"
+    )
+    context.bot.send_message(
+        chat_id=ADMINS_GROUPCHAT, text=message, parse_mode=ParseMode.HTML
+    )
 
 
 def vote(update: Update, context: CallbackContext) -> None:
@@ -332,19 +356,25 @@ def vote(update: Update, context: CallbackContext) -> None:
     return ConversationHandler.END
 
 
+def add_admin(update: Update, context: CallbackContext) -> None:
+    db.connect(reuse_if_open=True)
+    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    if user.isAdmin:
+        if update.message.reply_to_message:
+            newAdmin = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)[0]
+            newAdmin.isAdmin = True
+            newAdmin.save()
+        else:
+            update.message.reply_text('Please reply to a message sent by the person you would like to make admin!')
+    db.close()
+
+
 def main() -> None:
-    # Create files if not existing
-    open(userids_file, "a").close()
-    with open(submissions_file, "a", newline="") as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-
-    updater = Updater(TOKEN)
-
+    persistence = PicklePersistence('persistence.pkl')
+    updater = Updater(TOKEN, persistence=persistence)
     dispatcher = updater.dispatcher
-
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler(["start"], start)],
+        entry_points=[CommandHandler(["start", "help"], start)],
         states={
             MAIN_MENU: [
                 MessageHandler(Filters.regex("^Submit$"), accept_rules),
@@ -369,16 +399,17 @@ def main() -> None:
                 MessageHandler(Filters.regex("^Nah.$"), start_again),
             ],
         },
-        fallbacks=[CommandHandler(["cancel"], cancel)],
+        fallbacks=[CommandHandler(["cancel", "stop"], cancel), CommandHandler(["start", "help"], start)],
     )
 
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(CommandHandler(["notify", "notify_all"], notify_all))
+    dispatcher.add_handler(CommandHandler(["admin", "add_admin", "allow"], add_admin))
     dispatcher.add_handler(MessageHandler(Filters.chat_type.private & ~Filters.command, forward_to_chat))
     dispatcher.add_handler(
         MessageHandler(Filters.chat(ADMINS_GROUPCHAT) & Filters.reply & ~Filters.command, forward_to_user)
     )
-
+    dispatcher.add_error_handler(error_handler)
     updater.start_polling()
 
     updater.idle()
