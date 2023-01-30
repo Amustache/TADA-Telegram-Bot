@@ -1,7 +1,8 @@
 from peewee import *
 from playhouse.pool import PooledPostgresqlDatabase
+from secret import DB_DB, DB_USER, DB_PW, DB_HOST, DB_PORT
 
-db = PooledPostgresqlDatabase('tada', user='postgres', password='admin', host='localhost', port=5432, max_connections=8, stale_timeout=60)
+db = PooledPostgresqlDatabase(DB_DB, user=DB_USER, password=DB_PW, host=DB_HOST, port=DB_PORT, max_connections=8, stale_timeout=60)
 
 
 class BaseModel(Model):
@@ -10,6 +11,7 @@ class BaseModel(Model):
 
 
 class Contest(BaseModel):
+    name = TextField()
     starts = DateField()
     ends = DateField()
     publicCanVote = BooleanField(default=False)

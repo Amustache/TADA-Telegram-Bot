@@ -2,7 +2,7 @@
  A simple bot for the Telegram Art Display Action (TADA). 
  
 ## Setup
-This project requires Python 3.10+ and pip 22.0+
+This project requires Python 3.10+, pip 22.0+, and a Postgres DB
 1. `git clone git@github.com:Amustache/TADA-Telegram-Bot.git`
 2. `cd TADA-Telegram-Bot`
 3. `python -m venv env`
@@ -11,9 +11,13 @@ This project requires Python 3.10+ and pip 22.0+
 6. `cp secret.dist.py secret.py`
 7. Edit `secret.py`:
    * `TOKEN`: Your Telegram bot token
-   * `ADMINS_IDS`: Telegram ID of the people that should be able to vote on the bot
    * `ADMINS_GROUPCHAT`: Telegram ID of the groupchat in which messages will be forwarded 
    * `DUMP_GROUPCHAT`: Telegram ID of the channel in which submissions will be dumped
-   * `BASE_URL`: Local webserver to access submissions
+   * `DB_DB`: Name of the database
+   * `DB_USER`: Username to authenticate with the database
+   * `DB_PW`: Password to authenticate with the database
+   * `DB_HOST`: URL of the database
+   * `DB_PORT`: Port of the database
 
 ## Usage
+run the bot with `python main.py`
