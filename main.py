@@ -156,6 +156,9 @@ def submit_link(update: Update, context: CallbackContext) -> int:
 
 def tag_nsfw(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
+    if len(update.message.text) > 200:
+        update.message.reply_text("Unfortunately, that link is too long. Please give us a link under 200 characters (you can use a link shortener if needed)")
+        return SUBMIT_LINK
     context.user_data[user.id]["link"] = update.message.text
     update.message.reply_text(
         "You're getting there!\n"
