@@ -279,7 +279,7 @@ def submission(update: Update, context: CallbackContext) -> int:
     message += "- Telegram: {}\n".format(submission.at)
 
     with open(submission.filename, "rb") as file:
-        context.bot.send_photo(chat_id=DUMP_GROUPCHAT, photo=file, caption=message)
+        context.bot.send_photo(chat_id=DUMP_GROUPCHAT, photo=file, caption=message[:3500])
 
     # We are done here
     update.message.reply_text(
