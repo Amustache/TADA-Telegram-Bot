@@ -122,7 +122,7 @@ def start_again(update: Update, context: CallbackContext) -> int:
         update.message.reply_text("I'm sorry, however submissions are not currently open for TADA.\n"
                                   "If you feel this is in error, please send a message to this bot to get in contact with the admins.")
         return ConversationHandler.END
-    update.message.reply_text("Alright, let's start again, then!\n" "Please give use the title of your artwork.\n")
+    update.message.reply_text("Alright, let's start again, then!\n" "Please give us the title of your artwork.\n")
     context.user_data[update.effective_user.id]["nsfw"] = None
     return SUBMIT_TITLE
 
@@ -133,13 +133,16 @@ def submit_title(update: Update, context: CallbackContext) -> int:
     filename = "./works/{}_{}.jpg".format(user.id, datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     photo_file.download(filename)
     context.user_data[user.id]["filename"] = filename
-    update.message.reply_text("Nice!\n" "Now please give use the title of your artwork.\n")
+    update.message.reply_text("Nice!\n" "Now please give us the title of your artwork.\n")
 
     return SUBMIT_TITLE
 
 
 def submit_link(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
+    if len(update.message.text) > 300:
+        update.message.reply_text("Unfortunately, that title is too long. Please give us a title under 300 characters")
+        return SUBMIT_TITLE
     context.user_data[user.id]["title"] = update.message.text
     update.message.reply_text(
         "Awesome!\n"
@@ -175,6 +178,9 @@ def is_nsfw(update: Update, context: CallbackContext) -> int:
 
 def store_nsfw(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
+    if len(update.message.text) > 500:
+        update.message.reply_text("Unfortunately, that description is too long. Please give us a description under 500 characters")
+        return IS_NSFW
     context.user_data[user.id]["nsfw"] = update.message.text
     update.message.reply_text("Roger that!\n")
     update.message.reply_text(
@@ -210,6 +216,9 @@ def enter_author(update: Update, context: CallbackContext) -> int:
 
 def confirmation(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
+    if len(update.message.text) > 100:
+        update.message.reply_text("Unfortunately, that info is too long. Please give us a way to contact you that is under 100 characters")
+        return ENTER_AUTHOR
     context.user_data[user.id]["author"] = update.message.text
     update.message.reply_text("And you are done! ✨\n")
     message = "Here's what you submitted:\n"
@@ -223,10 +232,10 @@ def confirmation(update: Update, context: CallbackContext) -> int:
     message += "- Contact info (will not be shared publicly): {}\n".format(context.user_data[user.id]["author"])
 
     with open(context.user_data[user.id]["filename"], "rb") as file:
-        update.message.reply_photo(photo=file, caption=message)
+        update.message.reply_photo(photo=file, caption=message[:3500])
 
     update.message.reply_text(
-        "Are these information correct?\n", reply_markup=ReplyKeyboardMarkup([["Yes!", "Nah."]], one_time_keyboard=True)
+        "Is this information correct?\n", reply_markup=ReplyKeyboardMarkup([["Yes!", "Nah."]], one_time_keyboard=True)
     )
 
     return CONFIRMATION
@@ -297,6 +306,7 @@ def forward_to_chat(update: Update, context: CallbackContext) -> None:
         fromUserId=update.message.from_user.id,
         fromMsgId=update.message.message_id,
         adminChatMsgId=msg.message_id)
+    update.message.reply_text("I've forwarded this to the admins, they will respond soon!", reply_to_message_id=update.message.message_id)
     db.close()
 
 
@@ -307,7 +317,10 @@ def forward_to_user(update: Update, context: CallbackContext) -> None:
         supportMessage = SupportMessage.get_or_none(adminChatMsgId=update.message.reply_to_message.message_id)
         if supportMessage:
             context.bot.copy_message(
-                message_id=update.message.message_id, chat_id=supportMessage.fromUserId, from_chat_id=update.message.chat_id
+                message_id=update.message.message_id,
+                chat_id=supportMessage.fromUserId,
+                from_chat_id=update.message.chat_id,
+                reply_to_message_id=supportMessage.fromMsgId
             )
         else:
             context.bot.send_message(
@@ -379,6 +392,17 @@ def add_admin(update: Update, context: CallbackContext) -> None:
             update.message.reply_text('Please reply to a message sent by the person you would like to make admin!')
     db.close()
 
+
+# def add_contest(update: Update, context: CallbackContext) -> None:
+#
+#     db.connect(reuse_if_open=True)
+#     user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+#     if user.isAdmin:
+#         if update.effective_message.text.split('')
+#
+#
+#
+#     db.close()
 
 def main() -> None:
     persistence = PicklePersistence('persistence.pkl')

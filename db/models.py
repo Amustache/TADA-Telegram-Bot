@@ -11,7 +11,6 @@ class BaseModel(Model):
 
 
 class Contest(BaseModel):
-    name = TextField()
     starts = DateField()
     ends = DateField()
     publicCanVote = BooleanField(default=False)
