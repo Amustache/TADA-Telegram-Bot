@@ -73,15 +73,30 @@ def accept_rules(update: Update, context: CallbackContext) -> int:
         return ConversationHandler.END
     update.message.reply_text("*Rules*", parse_mode="MarkdownV2")
     update.message.reply_text(
+        "Note: rules are subject to change. Official, up-to-date rules are here: "
+        "https://telegra.ph/Telegram-Art-Display-Action-TADA-01-31"
+    )
+    update.message.reply_text(
         "- Submissions will be open from February, 1st to February, 28th.\n"
-        "- Everything goes! You can create anything, from meme to painting, stage plays to feature-length movie, singing, sculpting, dubbing, … Even a whole video game why not!\n"
-        "- The creation can be pre-existing (as in, you made the thing before that competition). However, the creation should be yours and yours alone, crafted by you, nurtured by you.\n"
-        "- You can submit as many creations as it pleases you. However, obvious spam will be severely ignored (and promptly deleted).\n"
-        "- You must have a picture to illustrate your creation - a “preview” - along with a link to the creation. We will not host anything on our side.\n"
-        '- For any physical/representative art, we would like to have a couple of photos or a video of the finished creation. For anything else, please try to provide something that does not need a lot of hardware, i.e., "we can open the file on a computer". We will try to make as much effort as possible if necessary.\n'
-        "- You must have a valid Telegram handle (@<something>). If possible, you should have a valid, public Telegram channel, linked to your creations.\n"
-        '- If the creation is NSFW (explicit content, lewd, etc.), you need to explicitly state that it is NSFW along with a CN (“what’s the nsfw part”). A blurred/censored/"public-friendly" preview needs to be provided.\n'
-        "- Anything illegal, racist, -phobic, hateful, or the likes is prohibited. We reserve the right to remove a creation without further notice."
+        "- Everything goes! You can create anything, from meme to painting, stage plays to feature-length movie, "
+        "singing, sculpting, dubbing, … Even a whole video game why not!\n "
+        "- The creation can be pre-existing (as in, you made the thing before that competition). However, "
+        "the creation should be yours and yours alone, crafted by you, nurtured by you.\n "
+        "- You can submit as many creations as it pleases you. However, obvious spam will be severely ignored (and "
+        "promptly deleted).\n "
+        "- You must have a picture to illustrate your creation - a “preview” - along with a link to the creation. We "
+        "will not host anything on our side.\n "
+        "- For any physical/representative art, we would like to have a couple of photos or a video of the finished "
+        "creation. For anything else, please try to provide something that does not need a lot of hardware, i.e., "
+        "'we can open the file on a computer'. We will try to make as much effort as possible if necessary.\n "
+        "- You must have a valid Telegram handle (@<something>). If possible, you should have a valid, "
+        "public Telegram channel, linked to your creations.\n "
+        "- If the creation is NSFW (explicit content, lewd, etc.), you need to explicitly state that it is NSFW along "
+        "with a CN (“what’s the nsfw part”). A blurred/censored/'public-friendly' preview needs to be provided.\n "
+        "- Anything illegal, racist, -phobic, hateful, or the likes is prohibited. We reserve the right to remove a "
+        "creation without further notice.\n "
+        "If you win a prize, only a valid PayPal account will be eligible to get the money. We will try exactly once "
+        "to send you the money. If it fails, we will not try again. "
     )
     update.message.reply_text(
         "Tl;DR if you want to partipate you need to send:\n"
@@ -153,8 +168,10 @@ def submit_link(update: Update, context: CallbackContext) -> int:
     context.user_data[user.id]["title"] = update.message.text
     update.message.reply_text(
         "Awesome!\n"
-        "Now, we need a link to the complete artwork. This will also help us to determine that the artwork is, indeed, yours.\n"
-        "If possible, give us a Telegram link (e.g., https://t.me/your_incredible_username_hehehe/1234), but any link will do!\n"
+        "Now, we need a link to the complete artwork. This will also help us to determine that the artwork is, "
+        "indeed, yours.\n "
+        "If possible, give us a Telegram link (e.g., https://t.me/your_incredible_username_hehehe/1234), but any link "
+        "will do!\n "
         'Note: the link must be valid (e.g., starts with "http" or "https").\n'
     )
 
@@ -165,14 +182,18 @@ def tag_nsfw(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
     if len(update.message.text) > 200:
         update.message.reply_text(
-            "Unfortunately, that link is too long. Please give us a link under 200 characters (you can use a link shortener if needed)"
+            "Unfortunately, that link is too long. Please give us a link under 200 characters (you can use a link "
+            "shortener if needed) "
         )
         return SUBMIT_LINK
     context.user_data[user.id]["link"] = update.message.text
     update.message.reply_text(
         "You're getting there!\n"
-        "Is your artwork NSFW (Not Safe For Work)? As a rule of thumb, if you would not show this artwork to your grandma or display it in an elementary school, it is probably NSFW."
-        'As a more precise rule, artworks that contains "nudity, intense sexuality, political incorrectness, profanity, slurs, violence or other potentially disturbing subject matter" (https://en.wikipedia.org/wiki/Not_safe_for_work) must be marked as NSFW.\n'
+        "Is your artwork NSFW (Not Safe For Work)? As a rule of thumb, if you would not show this artwork to your "
+        "grandma or display it in an elementary school, it is probably NSFW. "
+        'As a more precise rule, artworks that contains "nudity, intense sexuality, political incorrectness, '
+        'profanity, slurs, violence or other potentially disturbing subject matter" ('
+        "https://en.wikipedia.org/wiki/Not_safe_for_work) must be marked as NSFW.\n"
         "So, do you want to mark your artwork as NSFW?\n",
         reply_markup=ReplyKeyboardMarkup(
             [["My artwork is NSFW", "My artwork is safe"]], one_time_keyboard=True, disable_web_page_preview=True
@@ -201,7 +222,8 @@ def store_nsfw(update: Update, context: CallbackContext) -> int:
     update.message.reply_text("Roger that!\n")
     update.message.reply_text(
         "Every artwork needs credit!\n"
-        "We will now ask for a Telegram @ (e.g., @alembic). It can be the @ of your channel, or the @ of your own account.\n"
+        "We will now ask for a Telegram @ (e.g., @alembic). It can be the @ of your channel, or the @ of your own "
+        "account.\n "
         "Of course it shall start with an @ (;.\n"
     )
 
@@ -211,7 +233,8 @@ def store_nsfw(update: Update, context: CallbackContext) -> int:
 def enter_channel(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(
         "Every artwork needs credit!\n"
-        "We will now ask for a Telegram @ (e.g., @alembic). It can be the @ of your channel, or the @ of your own account.\n"
+        "We will now ask for a Telegram @ (e.g., @alembic). It can be the @ of your channel, or the @ of your own "
+        "account.\n "
         "Of course it shall start with an @ (;.\n",
         reply_markup=ReplyKeyboardRemove(),
     )
@@ -224,7 +247,8 @@ def enter_author(update: Update, context: CallbackContext) -> int:
     context.user_data[user.id]["at"] = update.message.text
     update.message.reply_text(
         "We are almost done!\n"
-        "Now, we just need to know a good way to contact you. This will only be shared with the admins of this competition.\n"
+        "Now, we just need to know a good way to contact you. This will only be shared with the admins of this "
+        "competition.\n "
     )
 
     return ENTER_AUTHOR
@@ -300,8 +324,10 @@ def submission(update: Update, context: CallbackContext) -> int:
     # We are done here
     update.message.reply_text(
         "Your information, along with your artwork, have been submitted!\n"
-        "Thank you so much for being part of this competition. We will get back to you in March to let you know the results!\n"
-        "Meanwhile, if you want to discuss with us, you can directly send a message here. You can also submit a new artwork by using /start.\n"
+        "Thank you so much for being part of this competition. We will get back to you in March to let you know the "
+        "results!\n "
+        "Meanwhile, if you want to discuss with us, you can directly send a message here. You can also submit a new "
+        "artwork by using /start.\n "
         "Have a great day!\n",
         reply_markup=ReplyKeyboardRemove(),
     )
