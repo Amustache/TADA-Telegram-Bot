@@ -388,7 +388,8 @@ def vote(update: Update, context: CallbackContext) -> None:
 
 def add_admin(update: Update, context: CallbackContext) -> None:
     db.connect(reuse_if_open=True)
-    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    user, _ = User.get_or_create(telegramId=str(update.effective_user.id))
+
     if user.isAdmin:
         if update.message.reply_to_message:
             newAdmin = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)[0]
