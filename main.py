@@ -436,6 +436,7 @@ def add_admin(update: Update, context: CallbackContext) -> None:
 
             new_admin.isAdmin = True
             new_admin.save()
+            update.message.reply_text(f"{update.effective_user.first_name} was added as an admin!")
         else:
             update.message.reply_text("Please reply to a message sent by the person you would like to make admin!")
     db.close()
@@ -448,7 +449,7 @@ def add_contest_and_themes(update: Update, context: CallbackContext) -> None:
         cur_year = datetime.today().year
         contest, created = Contest.get_or_create(starts=datetime(cur_year, 2, 1), ends=datetime(cur_year, 2, 28))
         if created:
-            update.message.reply_text("Created new contest for this year!")
+            update.message.reply_text(f"Created new contest for the year {cur_year}!")
         theme = " ".join(context.args)
         if theme:
             Theme.get_or_create(name=theme, contest=contest)
