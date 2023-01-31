@@ -392,7 +392,8 @@ def add_admin(update: Update, context: CallbackContext) -> None:
 
     if user.isAdmin:
         if update.message.reply_to_message:
-            newAdmin = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)[0]
+            newAdmin, _ = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)
+
             newAdmin.isAdmin = True
             newAdmin.save()
         else:
