@@ -297,7 +297,7 @@ def submission(update: Update, context: CallbackContext) -> int:
         db.close()
         return ConversationHandler.END
 
-    submission = Submission.create(
+    current_submission = Submission.create(
         title=user_data["title"],
         filename=user_data["filename"],
         link=user_data["link"],
@@ -309,16 +309,17 @@ def submission(update: Update, context: CallbackContext) -> int:
         user=user,
     )
     db.close()
-    user = update.effective_user
 
     # Send to DUMP
-    message = "#{}\n".format(submission.get_id())
-    message += "- Title: {}\n".format(submission.title)
-    message += "- Link: {}\n".format(submission.link)
-    message += "- NSFW?: {}\n".format("Yes, {}".format(submission.contentWarnings) if submission.nsfw else "No")
-    message += "- Telegram: {}\n".format(submission.at)
+    message = "#{}\n".format(current_submission.get_id())
+    message += "- Title: {}\n".format(current_submission.title)
+    message += "- Link: {}\n".format(current_submission.link)
+    message += "- NSFW?: {}\n".format(
+        "Yes, {}".format(current_submission.contentWarnings) if current_submission.nsfw else "No"
+    )
+    message += "- Telegram: {}\n".format(current_submission.at)
 
-    with open(submission.filename, "rb") as file:
+    with open(current_submission.filename, "rb") as file:
         context.bot.send_photo(chat_id=DUMP_GROUPCHAT, photo=file, caption=message[:3500])
 
     # We are done here
@@ -360,13 +361,13 @@ def forward_to_user(update: Update, context: CallbackContext) -> None:
     # Stolen from https://github.com/ohld/telegram-support-bot
     db.connect(reuse_if_open=True)
     if update.message.reply_to_message.from_user.id == context.bot.id:
-        supportMessage = SupportMessage.get_or_none(adminChatMsgId=update.message.reply_to_message.message_id)
-        if supportMessage:
+        support_message = SupportMessage.get_or_none(adminChatMsgId=update.message.reply_to_message.message_id)
+        if support_message:
             context.bot.copy_message(
                 message_id=update.message.message_id,
-                chat_id=supportMessage.fromUserId,
+                chat_id=support_message.fromUserId,
                 from_chat_id=update.message.chat_id,
-                reply_to_message_id=supportMessage.fromMsgId,
+                reply_to_message_id=support_message.fromMsgId,
             )
         else:
             context.bot.send_message(
@@ -390,7 +391,7 @@ def notify_all(update: Update, context: CallbackContext) -> None:
             for userid in userids:
                 try:
                     context.bot.send_message(chat_id=userid, text=update.message.reply_to_message.text)
-                except:
+                except telegram.error.TelegramError:
                     blocked += 1
             update.message.reply_text(
                 "Sent to {} people out of {} ({} failed).".format(total - blocked, total, blocked)
@@ -431,10 +432,10 @@ def add_admin(update: Update, context: CallbackContext) -> None:
 
     if user.isAdmin:
         if update.message.reply_to_message:
-            newAdmin, _ = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)
+            new_admin, _ = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)
 
-            newAdmin.isAdmin = True
-            newAdmin.save()
+            new_admin.isAdmin = True
+            new_admin.save()
         else:
             update.message.reply_text("Please reply to a message sent by the person you would like to make admin!")
     db.close()
