@@ -6,7 +6,8 @@ DUMP_GROUPCHAT = -1
 from peewee import SqliteDatabase
 
 
-DB = SqliteDatabase("./db/main.db")
+DB_FILENAME = "./db/main.db"
+DB = SqliteDatabase(DB_FILENAME)
 
 # from playhouse.pool import PooledPostgresqlDatabase
 # DB_DB = "tada"
