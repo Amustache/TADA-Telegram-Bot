@@ -35,7 +35,8 @@ public_can_vote = False
 
 def start(update: Update, context: CallbackContext) -> int:
     db.connect(reuse_if_open=True)
-    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    user, _ = User.get_or_create(telegramId=str(update.effective_user.id))
+
     current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
     db.close()
     choices = []
