@@ -248,7 +248,8 @@ def confirmation(update: Update, context: CallbackContext) -> int:
 def submission(update: Update, context: CallbackContext) -> int:
     user_data = context.user_data[update.effective_user.id]
     db.connect(reuse_if_open=True)
-    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    user, _ = User.get_or_create(telegramId=str(update.effective_user.id))
+
     current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
     if current_contest is None:
         update.message.reply_text("I'm sorry, however submissions are not currently open for TADA.\n"
