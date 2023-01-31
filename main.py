@@ -383,7 +383,7 @@ def notify_all(update: Update, context: CallbackContext) -> None:
 
     users = User.select()
     db.close()
-    if user.isAdmin:
+    if user.isAdmin or update.message.chat.id == ADMINS_GROUPCHAT:
         userids = [int(user.telegramId) for user in users]
         total = len(userids)
         blocked = 0
@@ -430,7 +430,7 @@ def add_admin(update: Update, context: CallbackContext) -> None:
     db.connect(reuse_if_open=True)
     user, _ = User.get_or_create(telegramId=str(update.effective_user.id))
 
-    if user.isAdmin:
+    if user.isAdmin or update.message.chat.id == ADMINS_GROUPCHAT:
         if update.message.reply_to_message:
             new_admin, _ = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)
 
@@ -444,7 +444,7 @@ def add_admin(update: Update, context: CallbackContext) -> None:
 def add_contest_and_themes(update: Update, context: CallbackContext) -> None:
     db.connect(reuse_if_open=True)
     user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
-    if user.isAdmin:
+    if user.isAdmin or update.message.chat.id == ADMINS_GROUPCHAT:
         cur_year = datetime.today().year
         contest, created = Contest.get_or_create(starts=datetime(cur_year, 2, 1), ends=datetime(cur_year, 2, 28))
         if created:
