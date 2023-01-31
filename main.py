@@ -11,7 +11,7 @@ from telegram import ParseMode, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, Filters, MessageHandler, PicklePersistence, Updater
 
 
-from db.models import Contest, db, Submission, SupportMessage, User
+from db.models import Contest, create_db, db, Submission, SupportMessage, User
 from secret import ADMINS_GROUPCHAT, DUMP_GROUPCHAT, TOKEN
 
 
@@ -454,6 +454,8 @@ def add_admin(update: Update, context: CallbackContext) -> None:
 
 
 def main() -> None:
+    create_db()
+
     persistence = PicklePersistence("persistence.pkl")
     updater = Updater(TOKEN, persistence=persistence)
     dispatcher = updater.dispatcher

@@ -2,12 +2,10 @@ from peewee import *
 from playhouse.pool import PooledPostgresqlDatabase
 
 
-from secret import DB_DB, DB_HOST, DB_PORT, DB_PW, DB_USER
+from secret import DB
 
 
-db = PooledPostgresqlDatabase(
-    DB_DB, user=DB_USER, password=DB_PW, host=DB_HOST, port=DB_PORT, max_connections=8, stale_timeout=60
-)
+db = DB
 
 
 class BaseModel(Model):
@@ -50,6 +48,7 @@ class Theme(BaseModel):
     contest = ForeignKeyField(Contest, backref="themes")
 
 
-db.connect()
-db.create_tables([Contest, User, Submission, Theme, SupportMessage])
-db.close()
+def create_db():
+    db.connect()
+    db.create_tables([Contest, User, Submission, Theme, SupportMessage])
+    db.close()

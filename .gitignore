@@ -3,6 +3,7 @@ users
 submissions.csv
 *.json
 persistence.pkl
+*.db
 
 # Created by https://www.toptal.com/developers/gitignore/api/windows,macos,linux,python,venv,pycharm+all
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,macos,linux,python,venv,pycharm+all
