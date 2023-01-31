@@ -1,8 +1,8 @@
 TOKEN = "1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 ADMINS_GROUPCHAT = -1
 DUMP_GROUPCHAT = -1
-DB_DB = 'tada'
-DB_USER = 'postgres'
-DB_PW = 'hunter2'
-DB_HOST = 'localhost'
+DB_DB = "tada"
+DB_USER = "postgres"
+DB_PW = "hunter2"
+DB_HOST = "localhost"
 DB_PORT = 5432

@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # pylint: disable=C0116,W0613
 from datetime import datetime
-import logging
 import html
 import json
+import logging
 import traceback
 
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, ParseMode
-from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, Filters, MessageHandler, Updater, PicklePersistence
-from db.models import db, Submission, User, Contest, SupportMessage
 
+from telegram import ParseMode, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, Filters, MessageHandler, PicklePersistence, Updater
+
+
+from db.models import Contest, db, Submission, SupportMessage, User
 from secret import ADMINS_GROUPCHAT, DUMP_GROUPCHAT, TOKEN
 
 
@@ -48,7 +50,7 @@ def start(update: Update, context: CallbackContext) -> int:
             choices.append(["{}Vote".format("(admin) " if user.isAdmin else "")])
             message += '👉 You can click on "Vote" to vote for artworks.\n'
     else:
-        message += 'There is currently not an active contest going on, please stay tuned for updates!\n'
+        message += "There is currently not an active contest going on, please stay tuned for updates!\n"
     message += (
         "👉 You can use /cancel to cancel what you are doing at any time, and /start to start over.\n"
         "Any questions? Simply directly send a message to this bot!"
@@ -64,8 +66,10 @@ def accept_rules(update: Update, context: CallbackContext) -> int:
     current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
     db.close()
     if current_contest is None:
-        update.message.reply_text("I'm sorry, however submissions are not currently open for TADA.\n"
-                                  "If you feel this is in error, please send a message to this bot to get in contact with the admins.")
+        update.message.reply_text(
+            "I'm sorry, however submissions are not currently open for TADA.\n"
+            "If you feel this is in error, please send a message to this bot to get in contact with the admins."
+        )
         return ConversationHandler.END
     update.message.reply_text("*Rules*", parse_mode="MarkdownV2")
     update.message.reply_text(
@@ -120,8 +124,10 @@ def start_again(update: Update, context: CallbackContext) -> int:
     current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
     db.close()
     if current_contest is None:
-        update.message.reply_text("I'm sorry, however submissions are not currently open for TADA.\n"
-                                  "If you feel this is in error, please send a message to this bot to get in contact with the admins.")
+        update.message.reply_text(
+            "I'm sorry, however submissions are not currently open for TADA.\n"
+            "If you feel this is in error, please send a message to this bot to get in contact with the admins."
+        )
         return ConversationHandler.END
     update.message.reply_text("Alright, let's start again, then!\n" "Please give us the title of your artwork.\n")
     context.user_data[update.effective_user.id]["nsfw"] = None
@@ -158,7 +164,9 @@ def submit_link(update: Update, context: CallbackContext) -> int:
 def tag_nsfw(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
     if len(update.message.text) > 200:
-        update.message.reply_text("Unfortunately, that link is too long. Please give us a link under 200 characters (you can use a link shortener if needed)")
+        update.message.reply_text(
+            "Unfortunately, that link is too long. Please give us a link under 200 characters (you can use a link shortener if needed)"
+        )
         return SUBMIT_LINK
     context.user_data[user.id]["link"] = update.message.text
     update.message.reply_text(
@@ -166,7 +174,9 @@ def tag_nsfw(update: Update, context: CallbackContext) -> int:
         "Is your artwork NSFW (Not Safe For Work)? As a rule of thumb, if you would not show this artwork to your grandma or display it in an elementary school, it is probably NSFW."
         'As a more precise rule, artworks that contains "nudity, intense sexuality, political incorrectness, profanity, slurs, violence or other potentially disturbing subject matter" (https://en.wikipedia.org/wiki/Not_safe_for_work) must be marked as NSFW.\n'
         "So, do you want to mark your artwork as NSFW?\n",
-        reply_markup=ReplyKeyboardMarkup([["My artwork is NSFW", "My artwork is safe"]], one_time_keyboard=True, disable_web_page_preview=True),
+        reply_markup=ReplyKeyboardMarkup(
+            [["My artwork is NSFW", "My artwork is safe"]], one_time_keyboard=True, disable_web_page_preview=True
+        ),
     )
 
     return NSFW
@@ -183,7 +193,9 @@ def is_nsfw(update: Update, context: CallbackContext) -> int:
 def store_nsfw(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
     if len(update.message.text) > 500:
-        update.message.reply_text("Unfortunately, that description is too long. Please give us a description under 500 characters")
+        update.message.reply_text(
+            "Unfortunately, that description is too long. Please give us a description under 500 characters"
+        )
         return IS_NSFW
     context.user_data[user.id]["nsfw"] = update.message.text
     update.message.reply_text("Roger that!\n")
@@ -221,7 +233,9 @@ def enter_author(update: Update, context: CallbackContext) -> int:
 def confirmation(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
     if len(update.message.text) > 100:
-        update.message.reply_text("Unfortunately, that info is too long. Please give us a way to contact you that is under 100 characters")
+        update.message.reply_text(
+            "Unfortunately, that info is too long. Please give us a way to contact you that is under 100 characters"
+        )
         return ENTER_AUTHOR
     context.user_data[user.id]["author"] = update.message.text
     update.message.reply_text("And you are done! ✨\n")
@@ -252,8 +266,10 @@ def submission(update: Update, context: CallbackContext) -> int:
 
     current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
     if current_contest is None:
-        update.message.reply_text("I'm sorry, however submissions are not currently open for TADA.\n"
-                                  "If you feel this is in error, please send a message to this bot to get in contact with the admins.")
+        update.message.reply_text(
+            "I'm sorry, however submissions are not currently open for TADA.\n"
+            "If you feel this is in error, please send a message to this bot to get in contact with the admins."
+        )
         db.close()
         return ConversationHandler.END
 
@@ -266,7 +282,7 @@ def submission(update: Update, context: CallbackContext) -> int:
         at=user_data["at"],
         author=user_data["author"],
         contest=current_contest,
-        user=user
+        user=user,
     )
     db.close()
     user = update.effective_user
@@ -275,9 +291,7 @@ def submission(update: Update, context: CallbackContext) -> int:
     message = "#{}\n".format(submission.get_id())
     message += "- Title: {}\n".format(submission.title)
     message += "- Link: {}\n".format(submission.link)
-    message += "- NSFW?: {}\n".format(
-        "Yes, {}".format(submission.contentWarnings) if submission.nsfw else "No"
-    )
+    message += "- NSFW?: {}\n".format("Yes, {}".format(submission.contentWarnings) if submission.nsfw else "No")
     message += "- Telegram: {}\n".format(submission.at)
 
     with open(submission.filename, "rb") as file:
@@ -308,10 +322,11 @@ def forward_to_chat(update: Update, context: CallbackContext) -> None:
     msg = update.message.forward(chat_id=ADMINS_GROUPCHAT)
     db.connect(reuse_if_open=True)
     SupportMessage.create(
-        fromUserId=update.message.from_user.id,
-        fromMsgId=update.message.message_id,
-        adminChatMsgId=msg.message_id)
-    update.message.reply_text("I've forwarded this to the admins, they will respond soon!", reply_to_message_id=update.message.message_id)
+        fromUserId=update.message.from_user.id, fromMsgId=update.message.message_id, adminChatMsgId=msg.message_id
+    )
+    update.message.reply_text(
+        "I've forwarded this to the admins, they will respond soon!", reply_to_message_id=update.message.message_id
+    )
     db.close()
 
 
@@ -325,7 +340,7 @@ def forward_to_user(update: Update, context: CallbackContext) -> None:
                 message_id=update.message.message_id,
                 chat_id=supportMessage.fromUserId,
                 from_chat_id=update.message.chat_id,
-                reply_to_message_id=supportMessage.fromMsgId
+                reply_to_message_id=supportMessage.fromMsgId,
             )
         else:
             context.bot.send_message(
@@ -375,9 +390,7 @@ def error_handler(update: object, context) -> None:
         f"<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n"
         f"<pre>{html.escape(tb_string)}</pre>"
     )
-    context.bot.send_message(
-        chat_id=ADMINS_GROUPCHAT, text=message, parse_mode=ParseMode.HTML
-    )
+    context.bot.send_message(chat_id=ADMINS_GROUPCHAT, text=message, parse_mode=ParseMode.HTML)
 
 
 def vote(update: Update, context: CallbackContext) -> None:
@@ -397,7 +410,7 @@ def add_admin(update: Update, context: CallbackContext) -> None:
             newAdmin.isAdmin = True
             newAdmin.save()
         else:
-            update.message.reply_text('Please reply to a message sent by the person you would like to make admin!')
+            update.message.reply_text("Please reply to a message sent by the person you would like to make admin!")
     db.close()
 
 
@@ -412,8 +425,9 @@ def add_admin(update: Update, context: CallbackContext) -> None:
 #
 #     db.close()
 
+
 def main() -> None:
-    persistence = PicklePersistence('persistence.pkl')
+    persistence = PicklePersistence("persistence.pkl")
     updater = Updater(TOKEN, persistence=persistence)
     dispatcher = updater.dispatcher
     conv_handler = ConversationHandler(

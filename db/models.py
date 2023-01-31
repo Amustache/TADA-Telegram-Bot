@@ -1,8 +1,13 @@
 from peewee import *
 from playhouse.pool import PooledPostgresqlDatabase
-from secret import DB_DB, DB_USER, DB_PW, DB_HOST, DB_PORT
 
-db = PooledPostgresqlDatabase(DB_DB, user=DB_USER, password=DB_PW, host=DB_HOST, port=DB_PORT, max_connections=8, stale_timeout=60)
+
+from secret import DB_DB, DB_HOST, DB_PORT, DB_PW, DB_USER
+
+
+db = PooledPostgresqlDatabase(
+    DB_DB, user=DB_USER, password=DB_PW, host=DB_HOST, port=DB_PORT, max_connections=8, stale_timeout=60
+)
 
 
 class BaseModel(Model):
@@ -29,8 +34,8 @@ class Submission(BaseModel):
     contentWarnings = TextField()
     at = TextField()
     author = TextField()
-    contest = ForeignKeyField(Contest, backref='submissions')
-    user = ForeignKeyField(User, backref='submissions')
+    contest = ForeignKeyField(Contest, backref="submissions")
+    user = ForeignKeyField(User, backref="submissions")
     # isPending = BooleanField(default=True)
 
 
@@ -42,7 +47,7 @@ class SupportMessage(BaseModel):
 
 class Theme(BaseModel):
     name = TextField()
-    contest = ForeignKeyField(Contest, backref='themes')
+    contest = ForeignKeyField(Contest, backref="themes")
 
 
 db.connect()
