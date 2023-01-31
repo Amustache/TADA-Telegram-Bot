@@ -35,7 +35,8 @@ public_can_vote = False
 
 def start(update: Update, context: CallbackContext) -> int:
     db.connect(reuse_if_open=True)
-    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    user, _ = User.get_or_create(telegramId=str(update.effective_user.id))
+
     current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
     db.close()
     choices = []
@@ -247,7 +248,8 @@ def confirmation(update: Update, context: CallbackContext) -> int:
 def submission(update: Update, context: CallbackContext) -> int:
     user_data = context.user_data[update.effective_user.id]
     db.connect(reuse_if_open=True)
-    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    user, _ = User.get_or_create(telegramId=str(update.effective_user.id))
+
     current_contest = Contest.get_or_none(Contest.starts <= datetime.now(), Contest.ends >= datetime.now())
     if current_contest is None:
         update.message.reply_text("I'm sorry, however submissions are not currently open for TADA.\n"
@@ -335,7 +337,8 @@ def forward_to_user(update: Update, context: CallbackContext) -> None:
 
 def notify_all(update: Update, context: CallbackContext) -> None:
     db.connect(reuse_if_open=True)
-    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    user, _ = User.get_or_create(telegramId=str(update.effective_user.id))
+
     users = User.select()
     db.close()
     if user.isAdmin:
@@ -385,10 +388,12 @@ def vote(update: Update, context: CallbackContext) -> None:
 
 def add_admin(update: Update, context: CallbackContext) -> None:
     db.connect(reuse_if_open=True)
-    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    user, _ = User.get_or_create(telegramId=str(update.effective_user.id))
+
     if user.isAdmin:
         if update.message.reply_to_message:
-            newAdmin = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)[0]
+            newAdmin, _ = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)
+
             newAdmin.isAdmin = True
             newAdmin.save()
         else:
