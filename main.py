@@ -11,7 +11,7 @@ from telegram import ParseMode, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import CallbackContext, CommandHandler, ConversationHandler, Filters, MessageHandler, PicklePersistence, Updater
 
 
-from db.models import Contest, create_db, db, Submission, SupportMessage, User
+from db.models import Contest, create_db, db, Submission, SupportMessage, Theme, User
 from secret import ADMINS_GROUPCHAT, DUMP_GROUPCHAT, TOKEN
 
 
@@ -441,16 +441,20 @@ def add_admin(update: Update, context: CallbackContext) -> None:
     db.close()
 
 
-# def add_contest(update: Update, context: CallbackContext) -> None:
-#
-#     db.connect(reuse_if_open=True)
-#     user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
-#     if user.isAdmin:
-#         if update.effective_message.text.split('')
-#
-#
-#
-#     db.close()
+def add_contest_and_themes(update: Update, context: CallbackContext) -> None:
+    db.connect(reuse_if_open=True)
+    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    if user.isAdmin:
+        cur_year = datetime.today().year
+        contest, created = Contest.get_or_create(starts=datetime(cur_year, 2, 1), ends=datetime(cur_year, 2, 28))
+        if created:
+            update.message.reply_text("Created new contest for this year!")
+        theme = " ".join(context.args)
+        if theme:
+            Theme.get_or_create(name=theme, contest=contest)
+            update.message.reply_text(f"Added theme {theme}!")
+
+    db.close()
 
 
 def main() -> None:
@@ -491,6 +495,7 @@ def main() -> None:
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(CommandHandler(["notify", "notify_all"], notify_all))
     dispatcher.add_handler(CommandHandler(["admin", "add_admin", "allow"], add_admin))
+    dispatcher.add_handler(CommandHandler(["new", "theme", "contest"], add_contest_and_themes))
     dispatcher.add_handler(MessageHandler(Filters.chat_type.private & ~Filters.command, forward_to_chat))
     dispatcher.add_handler(
         MessageHandler(Filters.chat(ADMINS_GROUPCHAT) & Filters.reply & ~Filters.command, forward_to_user)
