@@ -337,7 +337,8 @@ def forward_to_user(update: Update, context: CallbackContext) -> None:
 
 def notify_all(update: Update, context: CallbackContext) -> None:
     db.connect(reuse_if_open=True)
-    user = User.get_or_create(telegramId=str(update.effective_user.id))[0]
+    user, _ = User.get_or_create(telegramId=str(update.effective_user.id))
+
     users = User.select()
     db.close()
     if user.isAdmin:
