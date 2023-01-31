@@ -432,11 +432,18 @@ def add_admin(update: Update, context: CallbackContext) -> None:
 
     if user.isAdmin or update.message.chat.id == ADMINS_GROUPCHAT:
         if update.message.reply_to_message:
-            new_admin, _ = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)
+            new_admin, created = User.get_or_create(telegramId=update.message.reply_to_message.from_user.id)
 
             new_admin.isAdmin = True
             new_admin.save()
-            update.message.reply_text(f"{update.effective_user.first_name} was added as an admin!")
+            if created:
+                update.message.reply_text(
+                    f"{update.message.reply_to_message.from_user.first_name} was added as an admin!"
+                )
+            else:
+                update.message.reply_text(
+                    f"{update.message.reply_to_message.from_user.first_name} already was an admin!"
+                )
         else:
             update.message.reply_text("Please reply to a message sent by the person you would like to make admin!")
     db.close()
@@ -493,10 +500,10 @@ def main() -> None:
         fallbacks=[CommandHandler(["cancel", "stop"], cancel), CommandHandler(["start", "help"], start)],
     )
 
-    dispatcher.add_handler(conv_handler)
-    dispatcher.add_handler(CommandHandler(["notify", "notify_all"], notify_all))
-    dispatcher.add_handler(CommandHandler(["admin", "add_admin", "allow"], add_admin))
     dispatcher.add_handler(CommandHandler(["new", "theme", "contest"], add_contest_and_themes))
+    dispatcher.add_handler(CommandHandler(["admin", "add_admin", "allow"], add_admin))
+    dispatcher.add_handler(CommandHandler(["notify", "notify_all"], notify_all))
+    dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(MessageHandler(Filters.chat_type.private & ~Filters.command, forward_to_chat))
     dispatcher.add_handler(
         MessageHandler(Filters.chat(ADMINS_GROUPCHAT) & Filters.reply & ~Filters.command, forward_to_user)
