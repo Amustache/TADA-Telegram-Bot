@@ -363,12 +363,18 @@ def forward_to_user(update: Update, context: CallbackContext) -> None:
     if update.message.reply_to_message.from_user.id == context.bot.id:
         support_message = SupportMessage.get_or_none(adminChatMsgId=update.message.reply_to_message.message_id)
         if support_message:
-            context.bot.copy_message(
-                message_id=update.message.message_id,
-                chat_id=support_message.fromUserId,
-                from_chat_id=update.message.chat_id,
-                reply_to_message_id=support_message.fromMsgId,
-            )
+            try:
+                context.bot.copy_message(
+                    message_id=update.message.message_id,
+                    chat_id=support_message.fromUserId,
+                    from_chat_id=update.message.chat_id,
+                    reply_to_message_id=support_message.fromMsgId,
+                )
+            except telegram.error.Unauthorized as e:
+                context.bot.send_message(
+                    chat_id=ADMINS_GROUPCHAT,
+                    text=f"Could not reply: {e}",
+                )
         else:
             context.bot.send_message(
                 chat_id=ADMINS_GROUPCHAT,
